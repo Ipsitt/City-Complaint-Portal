@@ -8,7 +8,7 @@
 
 <h1><?php echo "Welcome to City Complaint Portal"; ?></h1>
 
-<p>This is a sample PHP + JS test page2.</p>
+<p>PUSH TEST</p>
 
 <h2 id="js-output"></h2>
 
