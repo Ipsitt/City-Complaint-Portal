@@ -276,7 +276,7 @@ if (!$conn->connect_error) {
 <footer>
   <p>City Complaint Portal • Aligned with UN SDGs</p>
   <p>complain.portal.paradox@gmail.com | +977-986-0906232</p>
-  <p>© 2024 City Complaint Portal</p>
+  <p>© 2025 City Complaint Portal</p>
 </footer>
 
 <script>
