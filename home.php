@@ -133,9 +133,15 @@ if (!$conn->connect_error) {
     padding: 1.5rem;
     border-radius: 10px;
     box-shadow: 0 0 15px #8b5cf644;
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease, transform 0.6s ease, opacity 0.6s ease;
     position: relative;
     display: block;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  .complaint-card.show {
+    opacity: 1;
+    transform: translateY(0);
   }
   .complaint-card:hover { box-shadow: 0 0 35px #a78bfaaa; }
   .complaint-left { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -272,6 +278,23 @@ if (!$conn->connect_error) {
   <p>complain.portal.paradox@gmail.com | +977-986-0906232</p>
   <p>© 2024 City Complaint Portal</p>
 </footer>
+
+<script>
+// Animate complaint cards on scroll
+const cards = document.querySelectorAll('.complaint-card');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('show');
+      observer.unobserve(entry.target); // animate once
+    }
+  });
+}, { threshold: 0.2 });
+
+cards.forEach(card => {
+  observer.observe(card);
+});
+</script>
 
 </body>
 </html>
