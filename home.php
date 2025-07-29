@@ -9,7 +9,6 @@ $conn = new mysqli("localhost", "root", "", "complain_portal");
 $resolved_percentage = 0;
 
 if (!$conn->connect_error) {
-    // Calculate percentage of resolved issues
     $total_sql = "SELECT COUNT(*) AS total FROM complaints";
     $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE status='resolved'";
 
@@ -94,7 +93,7 @@ if (!$conn->connect_error) {
     margin-top: 2rem;
     display: flex;
     gap: 2rem;
-    color: #eee;
+    color: #fff;
     font-weight: 600;
     font-size: 1rem;
   }
@@ -159,11 +158,11 @@ if (!$conn->connect_error) {
     border-radius: 6px;
     font-weight: bold;
     color: #000;
-    box-shadow: 0 0 10px;
     min-width: max-content;
   }
   .complaint-status.resolved { background: #0f0; box-shadow: 0 0 12px 2px #00ff00aa; }
-  .complaint-status.unresolved { background: #ff0; box-shadow: 0 0 12px 2px #ffff00aa; }
+  .complaint-status.being-resolved { background: #ff0; box-shadow: 0 0 12px 2px #ffff00aa; }
+  .complaint-status.unresolved { background: #f00; box-shadow: 0 0 12px 2px #ff0000aa; }
   .complaint-card p { margin-top: 0.5rem; color: #ddd; }
   .complaint-location { color: #aaa; font-size: 0.9rem; margin-top: 0.1rem; }
   .action-container {
@@ -216,7 +215,7 @@ if (!$conn->connect_error) {
     <button class="btn" onclick="location.href='track_complaint.php'">Track Your Complaint</button>
   </div>
   <div class="header-bottom-stats">
-    <div>📈 <span><?php echo $resolved_percentage; ?>% Issues Resolved</span></div>
+    <div>📈 <span id="resolved-percentage">0</span>% Issues Resolved</div>
     <div>🌍 <span>UN SDGs Aligned</span></div>
   </div>
 </header>
@@ -244,7 +243,15 @@ if (!$conn->connect_error) {
 
           if ($result && $result->num_rows > 0) {
               while ($row = $result->fetch_assoc()) {
-                  $status_class = strtolower($row['status']) === 'resolved' ? 'resolved' : 'unresolved';
+                  $status_text = strtolower($row['status']);
+                  if ($status_text === 'resolved') {
+                      $status_class = 'resolved';
+                  } elseif ($status_text === 'being resolved') {
+                      $status_class = 'being-resolved';
+                  } else {
+                      $status_class = 'unresolved';
+                  }
+
                   echo "
                   <div class='complaint-card'>
                       <div class='complaint-left'>
@@ -280,20 +287,27 @@ if (!$conn->connect_error) {
 </footer>
 
 <script>
-// Animate complaint cards on scroll
 const cards = document.querySelectorAll('.complaint-card');
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       entry.target.classList.add('show');
-      observer.unobserve(entry.target); // animate once
+      observer.unobserve(entry.target);
     }
   });
 }, { threshold: 0.2 });
+cards.forEach(card => observer.observe(card));
 
-cards.forEach(card => {
-  observer.observe(card);
-});
+const target = <?php echo $resolved_percentage; ?>;
+let current = 0;
+const el = document.getElementById('resolved-percentage');
+const speed = 20;
+
+const counter = setInterval(() => {
+  current++;
+  el.textContent = current;
+  if (current >= target) clearInterval(counter);
+}, speed);
 </script>
 
 </body>
