@@ -4,8 +4,27 @@ if (!isset($_SESSION['user_email'])) {
     header("Location: index.php");
     exit;
 }
-?>
 
+$conn = new mysqli("localhost", "root", "", "complain_portal");
+$resolved_percentage = 0;
+
+if (!$conn->connect_error) {
+    // Calculate percentage of resolved issues
+    $total_sql = "SELECT COUNT(*) AS total FROM complaints";
+    $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE status='resolved'";
+
+    $total_result = $conn->query($total_sql);
+    $resolved_result = $conn->query($resolved_sql);
+
+    if ($total_result && $resolved_result) {
+        $total = $total_result->fetch_assoc()['total'];
+        $resolved = $resolved_result->fetch_assoc()['resolved'];
+        if ($total > 0) {
+            $resolved_percentage = round(($resolved / $total) * 100);
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,7 +45,6 @@ if (!isset($_SESSION['user_email'])) {
   }
   a:hover { color: #8b5cf6; }
 
-  /* Navbar */
   .navbar {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -38,11 +56,7 @@ if (!isset($_SESSION['user_email'])) {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
     z-index: 1000;
   }
-  .navbar .left {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-  }
+  .navbar .left { display: flex; align-items: center; gap: 0.8rem; }
   .navbar .logo {
     width: 45px; height: 45px;
     border-radius: 50%;
@@ -50,15 +64,8 @@ if (!isset($_SESSION['user_email'])) {
     border: 2px solid #a78bfa;
     box-shadow: 0 0 10px #a78bfa88;
   }
-  .navbar h1 {
-    color: #a78bfa;
-    font-size: 1.5rem;
-  }
-  .navbar nav a {
-    margin-left: 1.5rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-  }
+  .navbar h1 { color: #a78bfa; font-size: 1.5rem; }
+  .navbar nav a { margin-left: 1.5rem; font-weight: 600; font-size: 1.1rem; }
 
   header {
     background: url('images/backdrop.jpeg') no-repeat center center/cover;
@@ -66,11 +73,7 @@ if (!isset($_SESSION['user_email'])) {
     text-align: left;
     margin-top: 70px;
   }
-  header h2 {
-    font-size: 2rem;
-    color: #fff;
-    margin-bottom: 0.5rem;
-  }
+  header h2 { font-size: 2rem; color: #fff; margin-bottom: 0.5rem; }
   header p { color: #ddd; max-width: 600px; margin-bottom: 1rem; }
   .buttons { margin-top: 1rem; }
   .btn {
@@ -118,7 +121,6 @@ if (!isset($_SESSION['user_email'])) {
   .feature-icon { font-size: 2.5rem; color: #a78bfa; }
   .feature h4 { margin: 1rem 0 0.5rem; color: #a78bfa; }
 
-  /* Recent complaints */
   .complaints-section { margin-top: 3rem; }
   .complaints-section h2 { margin-bottom: 1.5rem; color: #fff; }
   .complaints-grid {
@@ -126,7 +128,6 @@ if (!isset($_SESSION['user_email'])) {
     flex-direction: column;
     gap: 2rem;
   }
-
   .complaint-card {
     background: #1a1a1a;
     padding: 1.5rem;
@@ -136,33 +137,16 @@ if (!isset($_SESSION['user_email'])) {
     position: relative;
     display: block;
   }
-
-  .complaint-left {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
+  .complaint-card:hover { box-shadow: 0 0 35px #a78bfaaa; }
+  .complaint-left { display: flex; flex-direction: column; gap: 0.3rem; }
   .title-votes-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 1rem;
   }
-
-  .complaint-title {
-    color: #a78bfa;
-    font-size: 1.2rem;
-    font-weight: 600;
-  }
-
-  .complaint-votes {
-    font-size: 0.85rem;
-    color: #ccc;
-    white-space: nowrap;
-  }
-
-  /* Removed .complaint-status margin-top so it fits nicely */
+  .complaint-title { color: #a78bfa; font-size: 1.2rem; font-weight: 600; }
+  .complaint-votes { font-size: 0.85rem; color: #ccc; white-space: nowrap; }
   .complaint-status {
     padding: 4px 12px;
     font-size: 0.8rem;
@@ -171,32 +155,11 @@ if (!isset($_SESSION['user_email'])) {
     color: #000;
     box-shadow: 0 0 10px;
     min-width: max-content;
-    /* Remove margin-top since it’s now next to button */
-    margin-top: 0;
   }
-
-  .complaint-status.resolved {
-    background: #0f0;
-    box-shadow: 0 0 12px 2px #00ff00aa;
-  }
-
-  .complaint-status.unresolved {
-    background: #ff0;
-    box-shadow: 0 0 12px 2px #ffff00aa;
-  }
-
-  .complaint-card p {
-    margin-top: 0.5rem;
-    color: #ddd;
-  }
-
-  .complaint-location {
-    color: #aaa;
-    font-size: 0.9rem;
-    margin-top: 0.1rem;
-  }
-
-  /* Container to hold status pill + upvote button side by side */
+  .complaint-status.resolved { background: #0f0; box-shadow: 0 0 12px 2px #00ff00aa; }
+  .complaint-status.unresolved { background: #ff0; box-shadow: 0 0 12px 2px #ffff00aa; }
+  .complaint-card p { margin-top: 0.5rem; color: #ddd; }
+  .complaint-location { color: #aaa; font-size: 0.9rem; margin-top: 0.1rem; }
   .action-container {
     position: absolute;
     bottom: 10px;
@@ -205,7 +168,6 @@ if (!isset($_SESSION['user_email'])) {
     align-items: center;
     gap: 8px;
   }
-
   .upvote-btn {
     background: transparent;
     border: none;
@@ -214,19 +176,6 @@ if (!isset($_SESSION['user_email'])) {
     color: #a78bfa;
     padding: 0;
   }
-.complaint-card {
-  background: #1a1a1a;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 0 15px #8b5cf644;
-  transition: box-shadow 0.3s ease;
-  position: relative;
-  display: block;
-}
-
-.complaint-card:hover {
-  box-shadow: 0 0 35px #a78bfaaa;
-}
 
   footer {
     text-align: center;
@@ -261,7 +210,7 @@ if (!isset($_SESSION['user_email'])) {
     <button class="btn" onclick="location.href='track_complaint.php'">Track Your Complaint</button>
   </div>
   <div class="header-bottom-stats">
-    <div>📈 <span>85% Issues Resolved</span></div>
+    <div>📈 <span><?php echo $resolved_percentage; ?>% Issues Resolved</span></div>
     <div>🌍 <span>UN SDGs Aligned</span></div>
   </div>
 </header>
@@ -282,103 +231,38 @@ if (!isset($_SESSION['user_email'])) {
   <section class="complaints-section">
     <h2>Recent Complaints</h2>
     <div class="complaints-grid">
+      <?php
+      if (!$conn->connect_error) {
+          $sql = "SELECT title, description, location, votes, status FROM complaints ORDER BY date_reported DESC LIMIT 6";
+          $result = $conn->query($sql);
 
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Potholes on Main Street</div>
-            <div class="complaint-votes">120 people have faced this issue</div>
-          </div>
-          <p>Large potholes causing vehicle damage and traffic delays.</p>
-          <!-- Removed status pill from here -->
-          <div class="complaint-location">Location: Thames College, Baneshwor</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status resolved">Resolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Streetlight Outages</div>
-            <div class="complaint-votes">95 people have faced this issue</div>
-          </div>
-          <p>Dark streets at night, increasing risk of accidents.</p>
-          <!-- Removed status pill -->
-          <div class="complaint-location">Location: Kailash Colony, Budhanilkantha</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status unresolved">Unresolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Overflowing Garbage Bins</div>
-            <div class="complaint-votes">78 people have faced this issue</div>
-          </div>
-          <p>Uncollected waste leading to foul smell and hygiene issues.</p>
-          <!-- Removed status pill -->
-          <div class="complaint-location">Location: Lakeshide, Pokhara</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status resolved">Resolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Broken Traffic Signals</div>
-            <div class="complaint-votes">64 people have faced this issue</div>
-          </div>
-          <p>Traffic signals not functioning, causing confusion and jams.</p>
-          <!-- Removed status pill -->
-          <div class="complaint-location">Location: Himalayan Java, Putalisadak</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status unresolved">Unresolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Illegal Parking</div>
-            <div class="complaint-votes">51 people have faced this issue</div>
-          </div>
-          <p>Cars parked in no-parking zones blocking pedestrian access.</p>
-          <!-- Removed status pill -->
-          <div class="complaint-location">Location: Inn Hotel, New Road</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status resolved">Resolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
-      <div class="complaint-card">
-        <div class="complaint-left">
-          <div class="title-votes-row">
-            <div class="complaint-title">Flooded Sidewalks</div>
-            <div class="complaint-votes">42 people have faced this issue</div>
-          </div>
-          <p>Sidewalks flooded after rainfall making walking difficult.</p>
-          <!-- Removed status pill -->
-          <div class="complaint-location">Location: Raato Puul, Gausala</div>
-        </div>
-        <div class="action-container">
-          <div class="complaint-status unresolved">Unresolved</div>
-          <button class="upvote-btn">↑</button>
-        </div>
-      </div>
-
+          if ($result && $result->num_rows > 0) {
+              while ($row = $result->fetch_assoc()) {
+                  $status_class = strtolower($row['status']) === 'resolved' ? 'resolved' : 'unresolved';
+                  echo "
+                  <div class='complaint-card'>
+                      <div class='complaint-left'>
+                          <div class='title-votes-row'>
+                              <div class='complaint-title'>" . htmlspecialchars($row['title']) . "</div>
+                              <div class='complaint-votes'>" . intval($row['votes']) . " people have faced this issue</div>
+                          </div>
+                          <p>" . htmlspecialchars($row['description']) . "</p>
+                          <div class='complaint-location'>Location: " . htmlspecialchars($row['location']) . "</div>
+                      </div>
+                      <div class='action-container'>
+                          <div class='complaint-status $status_class'>" . htmlspecialchars($row['status']) . "</div>
+                          <button class='upvote-btn'>↑</button>
+                      </div>
+                  </div>";
+              }
+          } else {
+              echo "<p>No recent complaints found.</p>";
+          }
+      } else {
+          echo "<p style='color:red;'>Failed to connect to database.</p>";
+      }
+      $conn->close();
+      ?>
     </div>
   </section>
 </main>
