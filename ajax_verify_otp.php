@@ -43,23 +43,35 @@ if ($entered_otp == $row['otp']) {
         exit;
     }
 
-    if ($user['type'] == 1) {
-        // valid user type, proceed
-        // Invalidate old OTP by generating new random OTP
-        $new_otp = rand(100000, 999999);
-        $update = $conn->prepare("UPDATE otp SET otp = ? WHERE email = ?");
-        $update->bind_param("is", $new_otp, $email);
-        $update->execute();
-        $update->close();
-
-        $_SESSION['user_email'] = $email;
-        $_SESSION['user_type'] = $user['type'];
-
-        echo json_encode(['success' => true, 'message' => 'OTP verified']);
-    } else {
-        // User type not allowed for home.php redirect
-        echo json_encode(['success' => false, 'message' => 'Unauthorized user type']);
+    // Decide redirect based on user type
+    $redirect = '';
+    switch ((int)$user['type']) {
+        case 1:
+            $redirect = 'home.php'; // normal user
+            break;
+        case 2:
+            $redirect = 'gov_dashboard.php'; // government dashboard
+            break;
+        case 3:
+            $redirect = 'admin_dashboard.php'; // admin dashboard
+            break;
+        default:
+            echo json_encode(['success' => false, 'message' => 'Unauthorized user type']);
+            exit;
     }
+
+    // Invalidate old OTP
+    $new_otp = rand(100000, 999999);
+    $update = $conn->prepare("UPDATE otp SET otp = ? WHERE email = ?");
+    $update->bind_param("is", $new_otp, $email);
+    $update->execute();
+    $update->close();
+
+    // Set session data
+    $_SESSION['user_email'] = $email;
+    $_SESSION['user_type'] = $user['type'];
+
+    echo json_encode(['success' => true, 'message' => 'OTP verified', 'redirect' => $redirect]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid OTP']);
 }

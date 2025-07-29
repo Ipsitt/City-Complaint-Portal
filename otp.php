@@ -178,7 +178,7 @@ try {
       msgDiv.style.color = 'lightgreen';
       msgDiv.textContent = result.message + ', redirecting...';
       setTimeout(() => {
-        window.location.href = 'home.php';
+        window.location.href = result.redirect; // redirect sent by server
       }, 1500);
     } else {
       msgDiv.style.color = 'red';
