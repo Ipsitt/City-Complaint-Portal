@@ -7,12 +7,27 @@ if (!isset($_SESSION['user_email'])) {
 }
 
 $conn = new mysqli("localhost", "root", "", "complain_portal");
-if ($conn->connect_error) {
-    die("DB connection failed: " . $conn->connect_error);
+
+// For resolved percentage (from second file)
+$resolved_percentage = 0;
+if (!$conn->connect_error) {
+    $total_sql = "SELECT COUNT(*) AS total FROM complaints";
+    $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE status='resolved'";
+
+    $total_result = $conn->query($total_sql);
+    $resolved_result = $conn->query($resolved_sql);
+
+    if ($total_result && $resolved_result) {
+        $total = $total_result->fetch_assoc()['total'];
+        $resolved = $resolved_result->fetch_assoc()['resolved'];
+        if ($total > 0) {
+            $resolved_percentage = round(($resolved / $total) * 100);
+        }
+    }
 }
 
+// Fetch complaints for the logged-in user
 $user_email = $_SESSION['user_email'];
-
 $sql = "SELECT c.*, u.name AS complainer_name, u.contact AS complainer_contact 
         FROM complaints c
         JOIN user u ON c.user_email = u.user_email
@@ -40,50 +55,79 @@ function getStatusClass($status) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Your Complaints - City Portal</title>
 <style>
-/* Same styles as before — unchanged */
 body {
   background-color: #0a0a0a;
   color: #e0e0e0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
 }
+a {
+  color: #a78bfa;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+a:hover {
+  color: #8b5cf6;
+}
+
+/* NAVBAR from second file */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  background: #111;
+  background-color: #111;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 0.8rem 2rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   z-index: 1000;
 }
-.navbar .left { display: flex; align-items: center; gap: 0.8rem; }
-.logo {
+.navbar .left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.navbar .logo {
   width: 45px;
   height: 45px;
   border-radius: 50%;
+  object-fit: cover;
   border: 2px solid #a78bfa;
   box-shadow: 0 0 10px #a78bfa88;
 }
-.navbar h1 { color: #a78bfa; font-size: 1.5rem; }
+.navbar h1 {
+  color: #a78bfa;
+  font-size: 1.5rem;
+}
 .navbar nav a {
   margin-left: 1.5rem;
-  color: #a78bfa;
-  text-decoration: none;
   font-weight: 600;
+  font-size: 1.1rem;
 }
-.navbar nav a:hover { color: #8b5cf6; }
 
+/* HEADER */
 header {
   background: url('images/backdrop.jpeg') no-repeat center center/cover;
   padding: 8rem 2rem 3rem;
   margin-top: 70px;
 }
-header h2 { color: #fff; font-size: 2rem; margin-bottom: 0.5rem; }
-main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-.complaints-grid { display: flex; flex-direction: column; gap: 2rem; }
+header h2 {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
 
+/* MAIN COMPLAINTS GRID */
+main {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.complaints-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
 .complaint-card {
   background: #1a1a1a;
   padding: 1.5rem;
@@ -93,12 +137,14 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
-  /* Remove pointer cursor to reflect non-clickable */
   cursor: default;
 }
-.complaint-card:hover { box-shadow: 0 0 35px #a78bfaaa; }
+.complaint-card:hover {
+  box-shadow: 0 0 35px #a78bfaaa;
+}
 .complaint-card img {
-  width: 250px; height: auto;
+  width: 250px;
+  height: auto;
   border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
@@ -114,15 +160,22 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   display: flex;
   flex-direction: column;
 }
-.complaint-title { color: #a78bfa; font-size: 1.2rem; font-weight: 600; }
-.complaint-location { color: #aaa; font-size: 0.9rem; margin-top: 0.5rem; }
+.complaint-title {
+  color: #a78bfa;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.complaint-location {
+  color: #aaa;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
 .complaint-description {
   color: #ccc;
   font-size: 0.9rem;
   margin-top: 0.5rem;
   line-height: 1.4;
 }
-
 .status-votes {
   display: flex;
   flex-direction: column;
@@ -133,7 +186,6 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   color: #ccc;
   margin-bottom: 0.4rem;
 }
-
 .status-btn {
   padding: 6px 16px;
   font-size: 14px;
@@ -163,28 +215,32 @@ footer {
   font-size: 0.9rem;
   color: #aaa;
   padding: 2rem 1rem;
-  background: #111;
+  background-color: #111;
   margin-top: 3rem;
 }
 </style>
 </head>
 <body>
+
+<!-- NAVBAR -->
 <div class="navbar">
   <div class="left">
     <img src="images/logo.png" class="logo" />
     <h1>City Portal</h1>
   </div>
   <nav>
-    <a href="gov_dashboard.php">Dashboard</a>
+    <a href="home.php">Home</a>
+    <a href="issues.php">Recent Complaints</a>
     <a href="account.php">Account</a>
-    <a href="logout.php">Logout</a>
   </nav>
 </div>
 
+<!-- HEADER -->
 <header>
   <h2>Your Registered Complaints</h2>
 </header>
 
+<!-- MAIN SECTION -->
 <main>
   <section class="complaints-section">
     <h2>Your Complaints</h2>
@@ -219,16 +275,9 @@ footer {
   </section>
 </main>
 
-<!-- Modal section kept in case needed later but unused now -->
-<!-- Modal HTML (disabled functionality) -->
-<div id="modal" class="modal" aria-hidden="true" style="display:none;">
-  <!-- content intentionally hidden since modal functionality is disabled -->
-</div>
-
-<!-- Removed all modal-related JavaScript -->
-
 <footer>
   &copy; <?php echo date("Y"); ?> City Portal
 </footer>
+
 </body>
 </html>
