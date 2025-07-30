@@ -7,12 +7,27 @@ if (!isset($_SESSION['user_email'])) {
 }
 
 $conn = new mysqli("localhost", "root", "", "complain_portal");
-if ($conn->connect_error) {
-    die("DB connection failed: " . $conn->connect_error);
+
+// For resolved percentage (from second file)
+$resolved_percentage = 0;
+if (!$conn->connect_error) {
+    $total_sql = "SELECT COUNT(*) AS total FROM complaints";
+    $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE status='resolved'";
+
+    $total_result = $conn->query($total_sql);
+    $resolved_result = $conn->query($resolved_sql);
+
+    if ($total_result && $resolved_result) {
+        $total = $total_result->fetch_assoc()['total'];
+        $resolved = $resolved_result->fetch_assoc()['resolved'];
+        if ($total > 0) {
+            $resolved_percentage = round(($resolved / $total) * 100);
+        }
+    }
 }
 
+// Fetch complaints for the logged-in user
 $user_email = $_SESSION['user_email'];
-
 $sql = "SELECT c.*, u.name AS complainer_name, u.contact AS complainer_contact 
         FROM complaints c
         JOIN user u ON c.user_email = u.user_email
@@ -46,57 +61,90 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
 }
+a {
+  color: #a78bfa;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+a:hover {
+  color: #8b5cf6;
+}
+
+/* NAVBAR (copied from first file) */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  background: #111;
+  background-color: #111;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 0.8rem 2rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   z-index: 1000;
 }
-.navbar .left { display: flex; align-items: center; gap: 0.8rem; }
-.logo {
+.navbar .left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.navbar .logo {
   width: 45px;
   height: 45px;
   border-radius: 50%;
+  object-fit: cover;
   border: 2px solid #a78bfa;
   box-shadow: 0 0 10px #a78bfa88;
 }
-.navbar h1 { color: #a78bfa; font-size: 1.5rem; }
+.navbar h1 {
+  color: #a78bfa;
+  font-size: 1.5rem;
+}
 .navbar nav a {
   margin-left: 1.5rem;
-  color: #a78bfa;
-  text-decoration: none;
   font-weight: 600;
+  font-size: 1.1rem;
 }
-.navbar nav a:hover { color: #8b5cf6; }
 
+/* HEADER */
 header {
   background: url('images/backdrop.jpeg') no-repeat center center/cover;
   padding: 8rem 2rem 3rem;
   margin-top: 70px;
 }
-header h2 { color: #fff; font-size: 2rem; margin-bottom: 0.5rem; }
-main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-.complaints-grid { display: flex; flex-direction: column; gap: 2rem; }
+header h2 {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
 
+/* MAIN COMPLAINTS GRID */
+main {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.complaints-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
 .complaint-card {
   background: #1a1a1a;
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 0 15px #8b5cf644;
-  cursor: pointer;
   transition: box-shadow 0.3s ease;
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
+  cursor: default;
 }
-.complaint-card:hover { box-shadow: 0 0 35px #a78bfaaa; }
+.complaint-card:hover {
+  box-shadow: 0 0 35px #a78bfaaa;
+}
 .complaint-card img {
-  width: 250px; height: auto;
+  width: 250px;
+  height: auto;
   border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
@@ -112,15 +160,22 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   display: flex;
   flex-direction: column;
 }
-.complaint-title { color: #a78bfa; font-size: 1.2rem; font-weight: 600; }
-.complaint-location { color: #aaa; font-size: 0.9rem; margin-top: 0.5rem; }
+.complaint-title {
+  color: #a78bfa;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.complaint-location {
+  color: #aaa;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
 .complaint-description {
   color: #ccc;
   font-size: 0.9rem;
   margin-top: 0.5rem;
   line-height: 1.4;
 }
-
 .status-votes {
   display: flex;
   flex-direction: column;
@@ -131,7 +186,6 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   color: #ccc;
   margin-bottom: 0.4rem;
 }
-
 .status-btn {
   padding: 6px 16px;
   font-size: 14px;
@@ -156,64 +210,19 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   box-shadow: 0 0 10px 2px #ef444488;
 }
 
-.modal {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8);
-  display: none; justify-content: center; align-items: center;
-  z-index: 2000; padding: 1rem;
-}
-.modal-content {
-  background: #1a1a1a;
-  padding: 2rem;
-  border-radius: 15px;
-  max-width: 900px;
-  width: 90%;
-  color: #fff;
-  box-shadow: 0 0 20px #8b5cf6;
-  position: relative;
-  display: flex;
-  gap: 2rem;
-  flex-wrap: nowrap;
-  transform-origin: center;
-  transform: scale(0.5);
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-.modal.show .modal-content {
-  transform: scale(1);
-  opacity: 1;
-}
-.modal-close {
-  cursor: pointer;
-  position: absolute; top: 15px; right: 15px;
-  font-size: 24px; color: #fff;
-}
-.modal-content img {
-  width: 350px; height: auto;
-  border-radius: 10px; object-fit: cover;
-  flex-shrink: 0;
-}
-.modal-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.modal-info h2 { margin-top: 0; color: #a78bfa; }
-.modal-info p { margin: 0; line-height: 1.3; }
-.modal-info hr { border-color: #555; margin: 10px 0; }
-
 footer {
   text-align: center;
   font-size: 0.9rem;
   color: #aaa;
   padding: 2rem 1rem;
-  background: #111;
+  background-color: #111;
   margin-top: 3rem;
 }
 </style>
 </head>
 <body>
+
+<!-- NAVBAR -->
 <div class="navbar">
   <div class="left">
     <img src="images/logo.png" class="logo" />
@@ -221,15 +230,18 @@ footer {
   </div>
   <nav>
     <a href="home.php">Home</a>
+    <a href="issues.php">Recent Complaints</a>
     <a href="account.php">Account</a>
     <a href="logout.php">Logout</a>
   </nav>
 </div>
 
+<!-- HEADER -->
 <header>
   <h2>Your Registered Complaints</h2>
 </header>
 
+<!-- MAIN SECTION -->
 <main>
   <section class="complaints-section">
     <h2>Your Complaints</h2>
@@ -241,17 +253,7 @@ footer {
               $statusClass = getStatusClass($row['status']);
               $statusText = htmlspecialchars($row['status']);
 
-              echo "<div class='complaint-card' 
-                        data-id='{$row['complaint_id']}' 
-                        data-title='" . htmlspecialchars($row['title'], ENT_QUOTES) . "' 
-                        data-description='" . htmlspecialchars($row['description'], ENT_QUOTES) . "' 
-                        data-location='" . htmlspecialchars($row['location'], ENT_QUOTES) . "' 
-                        data-votes='{$row['votes']}' 
-                        data-status='" . htmlspecialchars($row['status'], ENT_QUOTES) . "'
-                        data-image='{$imagePath}'
-                        data-email='" . htmlspecialchars($row['user_email'], ENT_QUOTES) . "'
-                        data-name='" . htmlspecialchars($row['complainer_name'], ENT_QUOTES) . "'
-                        data-contact='" . htmlspecialchars($row['complainer_contact'], ENT_QUOTES) . "'>
+              echo "<div class='complaint-card'>
                       <img src='$imagePath' alt='Complaint Image'>
                       <div class='complaint-info'>
                         <div class='details-section'>
@@ -274,77 +276,9 @@ footer {
   </section>
 </main>
 
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="modal-content" role="document">
-    <button class="modal-close" aria-label="Close modal">&times;</button>
-    <img src="" alt="Complaint Image" id="modal-image" />
-    <div class="modal-info">
-      <h2 id="modal-title"></h2>
-      <p><strong>Description:</strong> <span id="modal-description"></span></p>
-      <p><strong>Location:</strong> <span id="modal-location"></span></p>
-      <p><strong>Votes:</strong> <span id="modal-votes"></span></p>
-      <p><strong>Status:</strong> <span id="modal-status"></span></p>
-      <hr />
-      <p><strong>Reported By:</strong> <span id="modal-name"></span></p>
-      <p><strong>Contact:</strong> <span id="modal-contact"></span></p>
-      <p><strong>Email:</strong> <span id="modal-email"></span></p>
-    </div>
-  </div>
-</div>
-
-<script>
-const modal = document.getElementById('modal');
-const modalImage = document.getElementById('modal-image');
-const modalTitle = document.getElementById('modal-title');
-const modalDescription = document.getElementById('modal-description');
-const modalLocation = document.getElementById('modal-location');
-const modalVotes = document.getElementById('modal-votes');
-const modalStatus = document.getElementById('modal-status');
-const modalName = document.getElementById('modal-name');
-const modalContact = document.getElementById('modal-contact');
-const modalEmail = document.getElementById('modal-email');
-const modalCloseBtn = document.querySelector('.modal-close');
-
-document.querySelectorAll('.complaint-card').forEach(card => {
-  card.addEventListener('click', () => {
-    modalImage.src = card.dataset.image;
-    modalTitle.textContent = card.dataset.title;
-    modalDescription.textContent = card.dataset.description;
-    modalLocation.textContent = card.dataset.location;
-    modalVotes.textContent = card.dataset.votes;
-    modalStatus.textContent = card.dataset.status;
-    modalName.textContent = card.dataset.name;
-    modalContact.textContent = card.dataset.contact;
-    modalEmail.textContent = card.dataset.email;
-
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
-    modalCloseBtn.focus();
-  });
-});
-
-modalCloseBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-  modal.setAttribute('aria-hidden', 'true');
-});
-
-window.addEventListener('click', e => {
-  if (e.target === modal) {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-});
-
-window.addEventListener('keydown', e => {
-  if (e.key === "Escape" && modal.style.display === 'flex') {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-});
-</script>
-
 <footer>
   &copy; <?php echo date("Y"); ?> City Portal
 </footer>
+
 </body>
 </html>
