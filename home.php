@@ -10,7 +10,7 @@ $resolved_percentage = 0;
 
 if (!$conn->connect_error) {
     $total_sql = "SELECT COUNT(*) AS total FROM complaints";
-    $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE status='resolved'";
+    $resolved_sql = "SELECT COUNT(*) AS resolved FROM complaints WHERE LOWER(status)='resolved'";
 
     $total_result = $conn->query($total_sql);
     $resolved_result = $conn->query($resolved_sql);
@@ -31,6 +31,7 @@ if (!$conn->connect_error) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>City Portal - Home</title>
 <style>
+  /* Your existing CSS */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background-color: #0a0a0a;
@@ -43,7 +44,6 @@ if (!$conn->connect_error) {
     transition: color 0.3s ease;
   }
   a:hover { color: #8b5cf6; }
-
   .navbar {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -65,7 +65,6 @@ if (!$conn->connect_error) {
   }
   .navbar h1 { color: #a78bfa; font-size: 1.5rem; }
   .navbar nav a { margin-left: 1.5rem; font-weight: 600; font-size: 1.1rem; }
-
   header {
     background: url('images/backdrop.jpeg') no-repeat center center/cover;
     padding: 8rem 2rem 3rem 2rem;
@@ -88,7 +87,6 @@ if (!$conn->connect_error) {
     cursor: pointer;
   }
   .btn:hover { background: #7c3aed; box-shadow: 0 0 30px #7c3aedcc; }
-
   .header-bottom-stats {
     margin-top: 2rem;
     display: flex;
@@ -97,12 +95,9 @@ if (!$conn->connect_error) {
     font-weight: 600;
     font-size: 1rem;
   }
-
   main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-
   .how-it-works { margin-bottom: 3rem; }
   .how-it-works h2 { color: #fff; margin-bottom: 1rem; }
-
   .features {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -119,7 +114,6 @@ if (!$conn->connect_error) {
   .feature:hover { box-shadow: 0 0 35px #a78bfaaa; }
   .feature-icon { font-size: 2.5rem; color: #a78bfa; }
   .feature h4 { margin: 1rem 0 0.5rem; color: #a78bfa; }
-
   .complaints-section { margin-top: 3rem; }
   .complaints-section h2 { margin-bottom: 1.5rem; color: #fff; }
   .complaints-grid {
@@ -181,7 +175,9 @@ if (!$conn->connect_error) {
     color: #a78bfa;
     padding: 0;
   }
-
+  .upvote-btn:disabled {
+    cursor: default;
+  }
   footer {
     text-align: center;
     font-size: 0.9rem;
@@ -239,20 +235,32 @@ if (!$conn->connect_error) {
     <div class="complaints-grid">
       <?php
       if (!$conn->connect_error) {
-          $sql = "SELECT title, description, location, votes, status FROM complaints ORDER BY date_reported DESC LIMIT 6";
+          $sql = "SELECT complaint_id, title, description, location, votes, status FROM complaints ORDER BY date_reported DESC LIMIT 6";
           $result = $conn->query($sql);
+          $user_email = $_SESSION['user_email'];
 
           if ($result && $result->num_rows > 0) {
               while ($row = $result->fetch_assoc()) {
+                  $complaint_id = $row['complaint_id'];
+
+                  // Check if this user already voted
+                  $vote_check_sql = "SELECT 1 FROM votes WHERE user_email = ? AND complaint_id = ?";
+                  $stmt = $conn->prepare($vote_check_sql);
+                  $stmt->bind_param("si", $user_email, $complaint_id);
+                  $stmt->execute();
+                  $stmt->store_result();
+                  $has_voted = $stmt->num_rows > 0;
+                  $stmt->close();
+
                   $status_text = strtolower($row['status']);
+                  $status_class = 'unresolved'; // default
                   if ($status_text === 'resolved') {
                       $status_class = 'resolved';
                   } elseif ($status_text === 'being resolved') {
                       $status_class = 'being-resolved';
-                  } else {
-                      $status_class = 'unresolved';
                   }
 
+                  // Output complaint card with button (not form)
                   echo "
                   <div class='complaint-card'>
                       <div class='complaint-left'>
@@ -264,8 +272,15 @@ if (!$conn->connect_error) {
                           <div class='complaint-location'>Location: " . htmlspecialchars($row['location']) . "</div>
                       </div>
                       <div class='action-container'>
-                          <div class='complaint-status $status_class'>" . htmlspecialchars($row['status']) . "</div>
-                          <button class='upvote-btn'>↑</button>
+                          <div class='complaint-status $status_class'>" . htmlspecialchars($row['status']) . "</div>";
+
+                  if ($has_voted) {
+                      echo "<button class='upvote-btn' data-id='" . intval($complaint_id) . "' disabled style='color:#3b82f6;'>↑</button>";
+                  } else {
+                      echo "<button class='upvote-btn' data-id='" . intval($complaint_id) . "'>↑</button>";
+                  }
+
+                  echo "
                       </div>
                   </div>";
               }
@@ -309,6 +324,39 @@ const counter = setInterval(() => {
   el.textContent = current;
   if (current >= target) clearInterval(counter);
 }, speed);
+
+// AJAX Upvote handling
+document.querySelectorAll('.upvote-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    if (button.disabled) return;
+
+    const complaintId = button.getAttribute('data-id');
+
+    fetch('vote.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'complaint_id=' + encodeURIComponent(complaintId)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update vote count text
+        const votesText = button.closest('.complaint-card').querySelector('.complaint-votes');
+        const currentVotes = parseInt(votesText.textContent);
+        votesText.textContent = (currentVotes + 1) + " people have faced this issue";
+
+        // Disable button and change color
+        button.disabled = true;
+        button.style.color = '#3b82f6';
+      } else {
+        alert(data.message || 'Failed to upvote');
+      }
+    })
+    .catch(err => {
+      alert('Error occurred: ' + err.message);
+    });
+  });
+});
 </script>
 
 </body>
