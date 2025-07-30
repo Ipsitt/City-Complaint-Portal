@@ -203,6 +203,7 @@ if (!$conn->connect_error) {
     <a href="home.php">Home</a>
     <a href="issues.php">Recent Complaints</a>
     <a href="account.php">Account</a>
+    <a href="logout.php">Logout</a>
   </nav>
 </div>
 
