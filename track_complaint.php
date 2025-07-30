@@ -40,6 +40,7 @@ function getStatusClass($status) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Your Complaints - City Portal</title>
 <style>
+/* Same styles as before — unchanged */
 body {
   background-color: #0a0a0a;
   color: #e0e0e0;
@@ -88,11 +89,12 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 0 15px #8b5cf644;
-  cursor: pointer;
   transition: box-shadow 0.3s ease;
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
+  /* Remove pointer cursor to reflect non-clickable */
+  cursor: default;
 }
 .complaint-card:hover { box-shadow: 0 0 35px #a78bfaaa; }
 .complaint-card img {
@@ -156,53 +158,6 @@ main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   box-shadow: 0 0 10px 2px #ef444488;
 }
 
-.modal {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8);
-  display: none; justify-content: center; align-items: center;
-  z-index: 2000; padding: 1rem;
-}
-.modal-content {
-  background: #1a1a1a;
-  padding: 2rem;
-  border-radius: 15px;
-  max-width: 900px;
-  width: 90%;
-  color: #fff;
-  box-shadow: 0 0 20px #8b5cf6;
-  position: relative;
-  display: flex;
-  gap: 2rem;
-  flex-wrap: nowrap;
-  transform-origin: center;
-  transform: scale(0.5);
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-.modal.show .modal-content {
-  transform: scale(1);
-  opacity: 1;
-}
-.modal-close {
-  cursor: pointer;
-  position: absolute; top: 15px; right: 15px;
-  font-size: 24px; color: #fff;
-}
-.modal-content img {
-  width: 350px; height: auto;
-  border-radius: 10px; object-fit: cover;
-  flex-shrink: 0;
-}
-.modal-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.modal-info h2 { margin-top: 0; color: #a78bfa; }
-.modal-info p { margin: 0; line-height: 1.3; }
-.modal-info hr { border-color: #555; margin: 10px 0; }
-
 footer {
   text-align: center;
   font-size: 0.9rem;
@@ -241,17 +196,7 @@ footer {
               $statusClass = getStatusClass($row['status']);
               $statusText = htmlspecialchars($row['status']);
 
-              echo "<div class='complaint-card' 
-                        data-id='{$row['complaint_id']}' 
-                        data-title='" . htmlspecialchars($row['title'], ENT_QUOTES) . "' 
-                        data-description='" . htmlspecialchars($row['description'], ENT_QUOTES) . "' 
-                        data-location='" . htmlspecialchars($row['location'], ENT_QUOTES) . "' 
-                        data-votes='{$row['votes']}' 
-                        data-status='" . htmlspecialchars($row['status'], ENT_QUOTES) . "'
-                        data-image='{$imagePath}'
-                        data-email='" . htmlspecialchars($row['user_email'], ENT_QUOTES) . "'
-                        data-name='" . htmlspecialchars($row['complainer_name'], ENT_QUOTES) . "'
-                        data-contact='" . htmlspecialchars($row['complainer_contact'], ENT_QUOTES) . "'>
+              echo "<div class='complaint-card'>
                       <img src='$imagePath' alt='Complaint Image'>
                       <div class='complaint-info'>
                         <div class='details-section'>
@@ -274,74 +219,13 @@ footer {
   </section>
 </main>
 
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="modal-content" role="document">
-    <button class="modal-close" aria-label="Close modal">&times;</button>
-    <img src="" alt="Complaint Image" id="modal-image" />
-    <div class="modal-info">
-      <h2 id="modal-title"></h2>
-      <p><strong>Description:</strong> <span id="modal-description"></span></p>
-      <p><strong>Location:</strong> <span id="modal-location"></span></p>
-      <p><strong>Votes:</strong> <span id="modal-votes"></span></p>
-      <p><strong>Status:</strong> <span id="modal-status"></span></p>
-      <hr />
-      <p><strong>Reported By:</strong> <span id="modal-name"></span></p>
-      <p><strong>Contact:</strong> <span id="modal-contact"></span></p>
-      <p><strong>Email:</strong> <span id="modal-email"></span></p>
-    </div>
-  </div>
+<!-- Modal section kept in case needed later but unused now -->
+<!-- Modal HTML (disabled functionality) -->
+<div id="modal" class="modal" aria-hidden="true" style="display:none;">
+  <!-- content intentionally hidden since modal functionality is disabled -->
 </div>
 
-<script>
-const modal = document.getElementById('modal');
-const modalImage = document.getElementById('modal-image');
-const modalTitle = document.getElementById('modal-title');
-const modalDescription = document.getElementById('modal-description');
-const modalLocation = document.getElementById('modal-location');
-const modalVotes = document.getElementById('modal-votes');
-const modalStatus = document.getElementById('modal-status');
-const modalName = document.getElementById('modal-name');
-const modalContact = document.getElementById('modal-contact');
-const modalEmail = document.getElementById('modal-email');
-const modalCloseBtn = document.querySelector('.modal-close');
-
-document.querySelectorAll('.complaint-card').forEach(card => {
-  card.addEventListener('click', () => {
-    modalImage.src = card.dataset.image;
-    modalTitle.textContent = card.dataset.title;
-    modalDescription.textContent = card.dataset.description;
-    modalLocation.textContent = card.dataset.location;
-    modalVotes.textContent = card.dataset.votes;
-    modalStatus.textContent = card.dataset.status;
-    modalName.textContent = card.dataset.name;
-    modalContact.textContent = card.dataset.contact;
-    modalEmail.textContent = card.dataset.email;
-
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
-    modalCloseBtn.focus();
-  });
-});
-
-modalCloseBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-  modal.setAttribute('aria-hidden', 'true');
-});
-
-window.addEventListener('click', e => {
-  if (e.target === modal) {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-});
-
-window.addEventListener('keydown', e => {
-  if (e.key === "Escape" && modal.style.display === 'flex') {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-});
-</script>
+<!-- Removed all modal-related JavaScript -->
 
 <footer>
   &copy; <?php echo date("Y"); ?> City Portal
