@@ -70,7 +70,7 @@ a:hover {
   color: #8b5cf6;
 }
 
-/* NAVBAR from second file */
+/* NAVBAR (copied from first file) */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -232,6 +232,7 @@ footer {
     <a href="home.php">Home</a>
     <a href="issues.php">Recent Complaints</a>
     <a href="account.php">Account</a>
+    <a href="logout.php">Logout</a>
   </nav>
 </div>
 
