@@ -220,7 +220,7 @@ footer {
     <h1>City Portal</h1>
   </div>
   <nav>
-    <a href="gov_dashboard.php">Dashboard</a>
+    <a href="home.php">Home</a>
     <a href="account.php">Account</a>
     <a href="logout.php">Logout</a>
   </nav>

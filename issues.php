@@ -17,10 +17,10 @@ $conn->close();
 
 /* ---------- FLAIR DATA ---------- */
 $flair = [
-    'water'                => ['color' => '#0099ff', 'emoji' => '💧'],
+    'water'                => ['color' => '#00ccffff', 'emoji' => '💧'],
     'electricity'          => ['color' => '#ffcc00', 'emoji' => '⚡'],
     'waste management'     => ['color' => '#33cc33', 'emoji' => '🗑️'],
-    'roads and infrastructures' => ['color' => '#000',   'emoji' => '🏙️'],
+    'roads and infrastructures' => ['color' => '#ffffff',   'emoji' => '🏙️'],
     'public safety'        => ['color' => '#0066ff', 'emoji' => '🚔'],
     'transportation'       => ['color' => '#ff3333', 'emoji' => '🚌'],
 ];
