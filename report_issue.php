@@ -394,7 +394,6 @@ $conn->close();
         </div>
         <nav>
             <a href="home.php">Home</a>
-            <a href="report_issue.php">Report Issue</a>
             <a href="gov_dashboard.php">Dashboard</a>
         </nav>
     </div>

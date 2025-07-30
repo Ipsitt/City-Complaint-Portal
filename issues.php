@@ -5,13 +5,13 @@ session_start();
 $conn = new mysqli("localhost", "root", "", "complain_portal");
 if ($conn->connect_error) die("DB connection failed: ".$conn->connect_error);
 
-/* ---------- SORT ORDER ---------- */
+/* ---------- SORT ORDER (public feed) ---------- */
 $sql = "SELECT c.*, u.name AS complainer_name, u.contact AS complainer_contact
         FROM complaints c
         JOIN user u ON c.user_email = u.user_email
-        ORDER BY c.votes DESC,
-                 FIELD(c.status,'Unresolved','In Progress','Resolved'),
-                 c.date_reported DESC";
+        ORDER BY c.date_reported DESC,
+                 FIELD(c.status,'Unresolved','Being Resolved','Resolved'),
+                 c.votes DESC";
 $complaints = $conn->query($sql)->fetch_all(MYSQLI_ASSOC);
 $conn->close();
 
@@ -27,6 +27,7 @@ $flair = [
 $statusColor = [
     'Resolved'      => '#0f0',
     'In Progress'   => '#ff0',
+    'Being Resolved'=> '#ff0', 
     'Unresolved'    => '#ff3333',
 ];
 ?>
@@ -87,6 +88,25 @@ main{max-width:1200px;margin:2rem auto;padding:0 1rem}
 .modal-info h2{margin:.2rem 0;color:var(--accent)}
 .modal-close{position:absolute;top:15px;right:20px;font-size:24px;color:var(--text);cursor:pointer}
 footer{text-align:center;font-size:.9rem;color:#aaa;padding:2rem 1rem;background:var(--nav);margin-top:3rem}
+.modal-close{
+    position:absolute;
+    top:15px;
+    right:20px;
+    width:34px;
+    height:34px;
+    border-radius:50%;      /* neat white circle */
+    background:#fff;        /* white background */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    font-weight:900;
+    color:#000;             /* black bold × */
+    cursor:pointer;
+    border:none;
+    line-height:1;
+    z-index:1;
+}
 </style>
 </head>
 <body>
@@ -96,7 +116,7 @@ footer{text-align:center;font-size:.9rem;color:#aaa;padding:2rem 1rem;background
     <h1>City Portal</h1>
   </div>
   <nav>
-    <a href="index.php">Home</a>
+    <a href="home.php">Home</a>
     <a href="logout.php">Logout</a>
   </nav>
 </div>
