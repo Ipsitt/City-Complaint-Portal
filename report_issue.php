@@ -65,17 +65,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "This complaint has already been submitted recently. Please wait a few minutes before submitting again.";
             } else {
                 // Insert complaint into database
-                $stmt = $conn->prepare("INSERT INTO complaints (title, description, location, sector, user_email, image, date_reported, status, votes) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'Unresolved', 0)");
+                $stmt = $conn->prepare("INSERT INTO complaints (title, description, location, sector, user_email, image, date_reported, status, votes) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'Unresolved', 1)");
                 $stmt->bind_param("ssssss", $title, $description, $location, $sector, $user_email, $image_name);
                 
-                if ($stmt->execute()) {
-                    $success = true;
-                    $message = "Complaint submitted successfully! Your issue has been reported.";
-                    // Clear form data
-                    $_POST = array();
-                } else {
-                    $message = "Failed to submit complaint. Please try again.";
-                }
+   if ($stmt->execute()) {
+    // Get the ID of the newly inserted complaint
+    $complaint_id = $stmt->insert_id;
+
+    // Insert default vote by the user
+    $vote_stmt = $conn->prepare("INSERT IGNORE INTO votes (user_email, complaint_id) VALUES (?, ?)");
+    $vote_stmt->bind_param("si", $user_email, $complaint_id);
+    $vote_stmt->execute();
+    $vote_stmt->close();
+
+    $success = true;
+    $message = "Complaint submitted successfully! Your issue has been reported.";
+    $_POST = array(); // Clear form data
+} else {
+    $message = "Failed to submit complaint. Please try again.";
+}
+
                 $stmt->close();
             }
             $check_duplicate->close();
@@ -481,7 +490,7 @@ $conn->close();
 
             <div class="form-footer">
                 <p>Your report will be reviewed by local authorities and assigned to the appropriate department.</p>
-                <p>Track your complaint status on the <a href="home.php">home page</a>.</p>
+                <p>Track your complaint status on the <a href="track_complaint.php">complaint history page</a>.</p>
             </div>
         </div>
     </div>
