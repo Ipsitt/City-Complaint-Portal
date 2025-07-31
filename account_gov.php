@@ -12,25 +12,23 @@ $gov_email = $_SESSION['user_email'];
 
 /* ---------- UPDATE PROFILE ---------- */
 $updateErrors = [];
-$updateSuccess = false;
+$showSuccess = false;
 
 if (isset($_POST['update_profile'])) {
     $name   = trim($_POST['name']);
     $phone  = trim($_POST['contact']);
-    $sector = trim($_POST['sector']);
 
     if (!preg_match('/^[A-Za-z ]{4,100}$/', $name))
         $updateErrors['name'] = 'Name needs 4–100 letters and spaces.';
     if (!preg_match('/^(9\d{9}|01\d{7})$/', $phone))
         $updateErrors['phone'] = 'Phone must be 9XXXXXXXXX or 01XXXXXXX.';
-    if (!in_array($sector, ['water','electricity','roads and infrastructures','waste management','public safety','public transportation']))
-        $updateErrors['sector'] = 'Invalid sector.';
 
     if (!$updateErrors) {
-        $stmt = $conn->prepare("UPDATE user SET name = ?, contact = ?, sector = ? WHERE user_email = ? AND type = 2");
-        $stmt->bind_param("ssss", $name, $phone, $sector, $gov_email);
-        $updateSuccess = $stmt->execute();
+        $stmt = $conn->prepare("UPDATE user SET name = ?, contact = ? WHERE user_email = ? AND type = 2");
+        $stmt->bind_param("sss", $name, $phone, $gov_email);
+        $stmt->execute();
         $stmt->close();
+        $showSuccess = true;
     }
 }
 
@@ -56,29 +54,57 @@ $conn->close();
   --text:#e0e0e0; --sec:#ccc;
   --success:#4BB543;
 }
-*{box-sizing:border-box;font-family:system-ui,Arial,sans-serif;margin:0;padding:0}
+*{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:0}
 html,body{height:100%}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
-nav{background:var(--nav);padding:1rem}
-nav h1{margin:0;color:var(--accent)}
+
+/* NAVBAR (same as gov_dashboard) */
+.navbar{position:fixed;top:0;left:0;right:0;background:var(--nav);display:flex;align-items:center;justify-content:space-between;padding:.8rem 2rem;box-shadow:0 2px 8px rgba(0,0,0,.8);z-index:1000}
+.navbar .left{display:flex;align-items:center;gap:.8rem}
+.navbar .logo{width:45px;height:45px;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 10px var(--accent)88}
+.navbar h1{color:var(--accent);font-size:1.5rem}
+.navbar nav{display:flex;align-items:center;gap:1rem}
+.navbar nav a{color:var(--accent);text-decoration:none;font-weight:600}
+
 main{flex:1;display:flex;align-items:center;justify-content:center;padding:100px 1rem 3rem}
 .card{background:var(--card);border-radius:8px;padding:2rem;box-shadow:0 0 10px #8b5cf666;max-width:480px;width:100%}
 h2{margin:0 0 1rem;color:var(--accent);font-size:1.4rem;text-align:center}
 label{display:block;margin:.75rem 0 .25rem;font-size:.9rem;color:var(--sec)}
-input,select,button{width:100%;padding:.75rem;border:none;border-radius:4px}
-input,select{background:#222;color:var(--text)}
+input{width:100%;padding:.75rem;border:none;border-radius:4px;background:#222;color:var(--text)}
 input[readonly]{background:#333;color:#aaa}
-button{background:var(--btn);color:#fff;font-weight:600;cursor:pointer;margin-top:1.5rem}
+
+/* button */
+button{
+    width:100%;
+    padding:.75rem;
+    border:none;
+    border-radius:4px;
+    background:var(--btn);
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:1.5rem;
+}
 button:hover{background:var(--btn-hover)}
+
 .error{color:#ff0;font-size:.8rem;margin-top:.25rem}
 .success{color:var(--success);font-size:.9rem;margin-top:1rem;text-align:center}
 footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem 1rem;background:var(--nav)}
 </style>
 </head>
 <body>
-<nav>
-    <h1>Government Profile</h1>
-</nav>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="left">
+        <img src="images/logo.png" class="logo" alt="City Portal">
+        <h1>City Portal</h1>
+    </div>
+    <nav>
+        <a href="gov_dashboard.php">Dashboard</a>
+        <a href="logout.php">Logout</a>
+    </nav>
+</div>
 
 <main>
     <div class="card">
@@ -99,20 +125,14 @@ footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem
             <?php if (!empty($updateErrors['phone'])) echo '<div class="error">'.$updateErrors['phone'].'</div>'; ?>
 
             <label>Sector</label>
-            <select name="sector" required>
-                <?php
-                $sectors = ['water','electricity','roads and infrastructures','waste management','public safety','public transportation'];
-                foreach ($sectors as $s) {
-                    $sel = ($s === $user['sector']) ? 'selected' : '';
-                    echo "<option value=\"$s\" $sel>".ucfirst($s)."</option>";
-                }
-                ?>
-            </select>
-            <?php if (!empty($updateErrors['sector'])) echo '<div class="error">'.$updateErrors['sector'].'</div>'; ?>
+            <input type="text" value="<?=ucfirst(htmlspecialchars($user['sector']))?>" readonly>
 
             <button type="submit">Save Changes</button>
-            <?php if ($updateSuccess): ?>
-                <div class="success">Profile updated successfully.</div>
+            <?php if ($showSuccess): ?>
+                <div class="success">Profile updated successfully. Redirecting…</div>
+                <script>
+                    setTimeout(() => window.location.href = "gov_dashboard.php", 2000);
+                </script>
             <?php endif; ?>
         </form>
     </div>

@@ -9,9 +9,11 @@ if (!isset($_SESSION['user_email']) || $_SESSION['user_type'] != 2) {
 $conn = new mysqli("localhost", "root", "", "complain_portal");
 if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
 
+$gov_email = $_SESSION['user_email'];
+
 /* 1.  READ CURRENT SECTOR */
-$stmt = $conn->prepare("SELECT sector FROM user WHERE user_email = ? AND type = 2");
-$stmt->bind_param("s", $_SESSION['user_email']);
+$stmt = $conn->prepare("SELECT sector FROM user WHERE user_email = ?");
+$stmt->bind_param("s", $gov_email);
 $stmt->execute();
 $stmt->bind_result($sector);
 $stmt->fetch();
@@ -19,7 +21,9 @@ $stmt->close();
 
 /* 2.  FILTER & LIST COMPLAINTS */
 $filter = $_GET['status'] ?? 'all';
-$sql = "SELECT c.*, u.name AS complainer_name, u.contact AS complainer_contact 
+$sql = "SELECT c.*, 
+               u.name   AS complainer_name, 
+               u.contact AS complainer_contact
         FROM complaints c
         JOIN user u ON c.user_email = u.user_email
         WHERE c.sector = ?";
@@ -31,7 +35,21 @@ if ($filter !== 'all') {
     $params[] = strtolower($filter);
     $types   .= 's';
 }
-$sql .= " ORDER BY c.date_reported DESC";
+
+/* custom sorting when viewing all complaints */
+if ($filter === 'all') {
+    $sql .= " ORDER BY 
+              CASE LOWER(c.status)
+                WHEN 'unresolved' THEN 1
+                WHEN 'being resolved' THEN 2
+                WHEN 'resolved' THEN 3
+                ELSE 4
+              END,
+              c.date_reported DESC";
+} else {
+    $sql .= " ORDER BY c.date_reported DESC";
+}
+
 $stmt = $conn->prepare($sql);
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
@@ -64,7 +82,6 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 .navbar h1{color:var(--accent);font-size:1.5rem}
 .navbar nav{display:flex;align-items:center;gap:1rem}
 .navbar nav a{color:var(--accent);text-decoration:none;font-weight:600}
-.navbar nav a:hover{color:var(--hover)}
 
 /* LAYOUT */
 .wrapper{display:flex;flex:1;margin-top:70px}
@@ -92,8 +109,45 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 
 /* MODAL & FOOTER */
 .modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.7);align-items:center;justify-content:center}
-.modal-content{background:var(--card);border-radius:15px;max-width:900px;width:90%;padding:2rem;color:var(--text);box-shadow:0 0 20px var(--accent);position:relative;display:flex;gap:2rem;flex-wrap:wrap}
-.modal-close{position:absolute;top:15px;right:15px;font-size:24px;color:var(--text);cursor:pointer}
+.modal-content{
+    background:var(--card);
+    border-radius:15px;
+    width:100%;
+    max-width:550px;
+    max-height:90vh;
+    padding:1.5rem;
+    color:var(--text);
+    box-shadow:0 0 20px var(--accent);
+    position:relative;
+    display:flex;
+    gap:1rem;
+    flex-direction:column;
+    overflow-y:auto;
+}
+.modal-close{
+    position:absolute;
+    top:10px;
+    right:15px;
+    font-size:26px;
+    color:var(--accent);
+    cursor:pointer;
+    z-index:1001;
+    background:rgba(0,0,0,.5);
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+}
+.modal-content img{
+    width:100%;
+    max-height:220px;
+    object-fit:cover;
+    border-radius:10px;
+    margin-top:20px;   /* push image below the close button */
+}
 footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem 1rem;background:var(--nav)}
 </style>
 </head>
@@ -106,7 +160,6 @@ footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem
         <h1>City Portal</h1>
     </div>
     <nav>
-        <a href="gov_dashboard.php">Dashboard</a>
         <a href="account_gov.php">Account</a>
         <a href="logout.php">Logout</a>
     </nav>
@@ -125,7 +178,8 @@ footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem
     <!-- CONTENT -->
     <main class="content">
         <section class="complaints-section">
-            <h2>Complaints <?= $filter!=='all' ? '(' . ucfirst($filter) . ')' : '' ?></h2>
+            <h2 style="margin-bottom:1.5rem">Sector: <?= ucfirst($sector) ?></h2>
+            <h3 style="margin-bottom:1.5rem">Complaints <?= $filter!=='all' ? '(' . ucfirst($filter) . ')' : '' ?></h3>
             <div class="complaints-grid">
                 <?php
                 if ($complaints) {
@@ -138,7 +192,17 @@ footer{margin-top:auto;text-align:center;font-size:.9rem;color:#aaa;padding:2rem
                             default           => 'unresolved'
                         };
                         echo "
-                        <div class='complaint-card' data-id='{$row['complaint_id']}'>
+                        <div class='complaint-card'
+                             data-id='{$row['complaint_id']}'
+                             data-image='{$imagePath}'
+                             data-title=\"" . htmlspecialchars($row['title']) . "\"
+                             data-description=\"" . htmlspecialchars($row['description']) . "\"
+                             data-location=\"" . htmlspecialchars($row['location']) . "\"
+                             data-votes='{$row['votes']}'
+                             data-status='{$row['status']}'
+                             data-email='{$row['user_email']}'
+                             data-name='" . htmlspecialchars($row['complainer_name']) . "'
+                             data-contact='" . htmlspecialchars($row['complainer_contact']) . "'>
                             <img src='{$imagePath}' alt='Complaint Image' loading='lazy'>
                             <div class='complaint-info'>
                                 <div class='title-votes-row'>
@@ -210,20 +274,21 @@ const modal = document.getElementById('modal');
 document.querySelectorAll('.complaint-card').forEach(card => {
     card.addEventListener('click', e => {
         if (e.target.classList.contains('status-dropdown')) return;
-        const d = card.dataset;
-        document.getElementById('modalImage').src = d.image;
-        document.getElementById('modalTitle').textContent = d.title;
-        document.getElementById('modalDesc').textContent = d.description;
-        document.getElementById('modalLoc').textContent = d.location;
-        document.getElementById('modalVotes').textContent = d.votes + ' people';
-        document.getElementById('modalStatus').textContent = d.status;
-        document.getElementById('modalEmail').textContent = d.email;
-        document.getElementById('modalName').textContent = d.name;
-        document.getElementById('modalContact').textContent = d.contact;
+        document.getElementById('modalImage').src     = card.dataset.image;
+        document.getElementById('modalTitle').textContent = card.dataset.title;
+        document.getElementById('modalDesc').textContent  = card.dataset.description;
+        document.getElementById('modalLoc').textContent   = card.dataset.location;
+        document.getElementById('modalVotes').textContent = card.dataset.votes + ' people';
+        document.getElementById('modalStatus').textContent = card.dataset.status;
+        document.getElementById('modalEmail').textContent = card.dataset.email;
+        document.getElementById('modalName').textContent  = card.dataset.name;
+        document.getElementById('modalContact').textContent = card.dataset.contact;
         modal.style.display = 'flex';
     });
 });
+/* close on X or outside click */
 document.getElementById('modalClose').addEventListener('click', () => modal.style.display = 'none');
+modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
 </script>
 </body>
 </html>
