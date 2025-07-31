@@ -22,22 +22,21 @@ if (isset($_POST['delete_user'])) {
 }
 
 /* ---------- UPDATE ---------- */
-$updateErrors = []; $updateValues = [];
+$updateErrors = [];
 if (isset($_POST['update_user'])) {
-    $updateValues = [
-        'email'  => $_POST['u_email'],
-        'name'   => trim($_POST['u_name']),
-        'phone'  => trim($_POST['u_contact']),
-        'sector' => $_POST['u_sector']
-    ];
-    if (!preg_match('/^[A-Za-z ]{4,100}$/', $updateValues['name']))
+    $name  = trim($_POST['u_name']);
+    $phone = trim($_POST['u_contact']);
+    $sector= $_POST['u_sector'];
+    $email = $_POST['u_email'];
+
+    if (!preg_match('/^[A-Za-z ]{4,100}$/', $name))
         $updateErrors['name'] = 'Name needs 1–2 spaces, 4–100 letters.';
-    if (!preg_match('/^(9\d{9}|01\d{7})$/', $updateValues['phone']))
+    if (!preg_match('/^(9\d{9}|01\d{7})$/', $phone))
         $updateErrors['phone'] = 'Phone: 9XXXXXXXXX or 01XXXXXXX';
 
     if (!$updateErrors) {
         $stmt = $conn->prepare("UPDATE user SET name=?, contact=?, sector=? WHERE user_email=? AND type=2");
-        $stmt->bind_param("ssss", $updateValues['name'], $updateValues['phone'], $updateValues['sector'], $updateValues['email']);
+        $stmt->bind_param("ssss", $name, $phone, $sector, $email);
         $stmt->execute();
         $stmt->close();
         header("Location: admin_dashboard.php"); exit;
@@ -45,14 +44,17 @@ if (isset($_POST['update_user'])) {
 }
 
 /* ---------- CREATE ---------- */
-$createErrors = []; $createValues = [];
+$createErrors = [];
+$createValues = [];
 if (isset($_POST['create_user'])) {
     $createValues = [
-        'name'   => trim($_POST['fullname']),
-        'email'  => trim($_POST['email']),
-        'phone'  => trim($_POST['contact']),
-        'sector' => $_POST['sector']
+        'name'  => trim($_POST['fullname']),
+        'email' => trim($_POST['email']),
+        'phone' => trim($_POST['contact']),
+        'sector'=> $_POST['sector']
     ];
+
+    // basic validation
     if (!preg_match('/^[A-Za-z ]{4,100}$/', $createValues['name']))
         $createErrors['name'] = 'Name needs 1–2 spaces, 4–100 letters.';
     if (!preg_match('/^\S+@\S+\.\S+$/', $createValues['email']))
@@ -60,10 +62,24 @@ if (isset($_POST['create_user'])) {
     if (!preg_match('/^(9\d{9}|01\d{7})$/', $createValues['phone']))
         $createErrors['phone'] = 'Phone: 9XXXXXXXXX or 01XXXXXXX';
 
+    // duplicate email check
     if (!$createErrors) {
-        $stmt = $conn->prepare("INSERT INTO user (user_email, name, contact, type, sector) VALUES (?,?,?,?,?)");
+        $check = $conn->prepare("SELECT 1 FROM user WHERE user_email = ?");
+        $check->bind_param("s", $createValues['email']);
+        $check->execute();
+        $check->store_result();
+        if ($check->num_rows) {
+            $createErrors['email'] = 'Email already exists.';
+        }
+        $check->close();
+    }
+
+    if (!$createErrors) {
+        $stmt = $conn->prepare("INSERT INTO user (user_email, name, contact, type, sector)
+                                VALUES (?,?,?,?,?)");
         $type = 2;
-        $stmt->bind_param("sssis", $createValues['email'], $createValues['name'], $createValues['phone'], $type, $createValues['sector']);
+        $stmt->bind_param("sssis", $createValues['email'], $createValues['name'],
+                          $createValues['phone'], $type, $createValues['sector']);
         if ($stmt->execute()) {
             header("Location: admin_dashboard.php"); exit;
         } else {
@@ -137,17 +153,13 @@ $conn->close();
 
             <label>Government Sector</label>
             <select name="sector" required>
-                <option value="" disabled <?=!isset($createValues['sector']) ? 'selected' : ''?>>Select sector</option>
-                <option <?=($createValues['sector'] ?? '')==='Water' ? 'selected' : ''?>>Water</option>
-                <option <?=($createValues['sector'] ?? '')==='Electricity' ? 'selected' : ''?>>Electricity</option>
-                <option <?=($createValues['sector'] ?? '')==='Waste Management' ? 'selected' : ''?>>Waste Management</option>
-                <option <?=($createValues['sector'] ?? '')==='Roads and Infrastructures' ? 'selected' : ''?>>Roads and Infrastructures</option>
-                <option <?=($createValues['sector'] ?? '')==='Health and Sanitation' ? 'selected' : ''?>>Health and Sanitation</option>
-                <option <?=($createValues['sector'] ?? '')==='Education' ? 'selected' : ''?>>Education</option>
-                <option <?=($createValues['sector'] ?? '')==='Public Safety' ? 'selected' : ''?>>Public Safety</option>
-                <option <?=($createValues['sector'] ?? '')==='Transport and Traffic' ? 'selected' : ''?>>Transport and Traffic</option>
-                <option <?=($createValues['sector'] ?? '')==='Environment' ? 'selected' : ''?>>Environment</option>
-                <option <?=($createValues['sector'] ?? '')==='Municipality Office' ? 'selected' : ''?>>Municipality Office</option>
+                <option value="" disabled <?=!isset($createValues['sector']) ? 'selected' : ''?>>Select Sector</option>
+                <option <?=($createValues['sector'] ?? '')==='water' ? 'selected' : ''?>>Water</option>
+                <option <?=($createValues['sector'] ?? '')==='electricity' ? 'selected' : ''?>>Electricity</option>
+                <option <?=($createValues['sector'] ?? '')==='roads and infrastructures' ? 'selected' : ''?>>Roads & Infrastructures</option>
+                <option <?=($createValues['sector'] ?? '')==='waste management' ? 'selected' : ''?>>Waste Management</option>
+                <option <?=($createValues['sector'] ?? '')==='public safety' ? 'selected' : ''?>>Public Safety</option>
+                <option <?=($createValues['sector'] ?? '')==='public transportation' ? 'selected' : ''?>>Public Transportation</option>
             </select>
 
             <button type="submit" style="margin-top:1.5rem">Create Account</button>
@@ -212,11 +224,13 @@ $conn->close();
 
             <label>Sector</label>
             <select name="u_sector" id="u_sector" required>
-                <option>Water</option><option>Electricity</option><option>Waste Management</option>
-                <option>Roads and Infrastructures</option><option>Health and Sanitation</option>
-                <option>Education</option><option>Public Safety</option>
-                <option>Transport and Traffic</option><option>Environment</option>
-                <option>Municipality Office</option>
+                <option value="" disabled <?= !isset($_POST['u_sector']) ? 'selected' : '' ?>>Select Sector</option>
+                <option value="Water">Water</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Roads and Infrastructures">Roads & Infrastructures</option>
+                <option value="Waste Management">Waste Management</option>
+                <option value="Public Safety">Public Safety</option>
+                <option value="Public Transportation">Public Transportation</option>
             </select>
 
             <button type="submit" style="margin-top:1.5rem">Save Changes</button>

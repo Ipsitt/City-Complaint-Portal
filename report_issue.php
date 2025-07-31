@@ -394,7 +394,9 @@ $conn->close();
         </div>
         <nav>
             <a href="home.php">Home</a>
-            <a href="gov_dashboard.php">Dashboard</a>
+            <a href="issues.php">Recent Complaints</a>
+            <a href="account.php">Account</a>
+            <a href="logout.php">Logout</a>
         </nav>
     </div>
 
@@ -426,14 +428,13 @@ $conn->close();
                 <div class="form-group">
                     <label for="sector">Issue Category <span class="required">*</span></label>
                 <select id="sector" name="sector" required>
-                    <option value="">Select a category</option>
-                    <option value="water"        <?= ($_POST['sector'] ?? '') === 'water'        ? 'selected' : '' ?>>Water & Sanitation</option>
+                    <option value="" disabled <?= ($_POST['sector'] ?? '') === '' ? 'selected' : '' ?>>Select a Category</option>
+                    <option value="water"        <?= ($_POST['sector'] ?? '') === 'water'        ? 'selected' : '' ?>>Water</option>
                     <option value="electricity"  <?= ($_POST['sector'] ?? '') === 'electricity'  ? 'selected' : '' ?>>Electricity & Street Lights</option>
                     <option value="waste"        <?= ($_POST['sector'] ?? '') === 'waste'        ? 'selected' : '' ?>>Waste Management</option>
                     <option value="roads and infrastructures" <?= ($_POST['sector'] ?? '') === 'roads and infrastructures' ? 'selected' : '' ?>>Roads & Infrastructure</option>
                     <option value="public safety" <?= ($_POST['sector'] ?? '') === 'public safety' ? 'selected' : '' ?>>Public Safety</option>
                     <option value="transportation" <?= ($_POST['sector'] ?? '') === 'transportation' ? 'selected' : '' ?>>Public Transport</option>
-                    <option value="other"        <?= ($_POST['sector'] ?? '') === 'other'        ? 'selected' : '' ?>>Other</option>
                 </select>
                 </div>
 
