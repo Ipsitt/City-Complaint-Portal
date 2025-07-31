@@ -181,5 +181,14 @@ $conn->close();
         </form>
     </div>
 </main>
+
+<?php if ($updateSuccess): ?>
+<script>
+  setTimeout(() => {
+    window.location.href = 'home.php';
+  }, 2000); // Redirect after 2 seconds
+</script>
+<?php endif; ?>
+
 </body>
 </html>
