@@ -108,9 +108,16 @@ $conn->close();
     }
     *{box-sizing:border-box;font-family:system-ui,Arial,sans-serif}
     body{margin:0;background:var(--bg);color:var(--text)}
-    nav{background:var(--nav);padding:1rem}
-    nav h1{margin:0;color:var(--accent)}
-    main{max-width:960px;margin:3rem auto;padding:0 1rem}
+    
+    /* NAVBAR */
+    .navbar{position:fixed;top:0;left:0;right:0;background:var(--nav);display:flex;align-items:center;justify-content:space-between;padding:.8rem 2rem;box-shadow:0 2px 8px rgba(0,0,0,.8);z-index:1000}
+    .navbar .left{display:flex;align-items:center;gap:.8rem}
+    .navbar .logo{width:45px;height:45px;border-radius:50%;border:2px solid var(--accent);box-shadow:0 0 10px var(--accent)88}
+    .navbar h1{color:var(--accent);font-size:1.5rem}
+    .navbar nav{display:flex;align-items:center;gap:1rem}
+    .navbar nav a{color:var(--accent);text-decoration:none;font-weight:600}
+    
+    main{max-width:960px;margin:3rem auto;padding:0 1rem;margin-top:100px}
     .card{background:var(--card);border-radius:8px;padding:2rem;box-shadow:0 0 10px #8b5cf666;margin-bottom:2rem}
     label{display:block;margin:.75rem 0 .25rem;font-size:.9rem;color:var(--sec)}
     input,select,button{width:100%;padding:.75rem;border:none;border-radius:4px}
@@ -130,7 +137,16 @@ $conn->close();
 </head>
 <body>
 
-<nav><h1>Government Account Management</h1></nav>
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="left">
+        <img src="images/logo.png" class="logo" alt="City Portal">
+        <h1>City Portal</h1>
+    </div>
+    <nav>
+        <a href="logout.php">Logout</a>
+    </nav>
+</div>
 
 <main>
     <!-- ---------- CREATE ---------- -->
