@@ -177,7 +177,7 @@ footer { text-align: center; font-size: 0.9rem; color: #aaa; padding: 2rem 1rem;
   </div>
   <nav>
     <a href="gov_dashboard.php">Dashboard</a>
-    <a href="account.php">Account</a>
+    <a href="account_gov.php">Account</a>
     <a href="logout.php">Logout</a>
   </nav>
 </div>
